@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	ddbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"log"
+	"os"
 )
 
 type DynamoDBStore struct {
@@ -18,8 +19,46 @@ type DynamoDBStore struct {
 
 var _ Store = (*DynamoDBStore)(nil)
 
+func CreateLocalClient() *dynamodb.Client {
+	awsEndpoint := "http://localhost:4566"
+	awsRegion := "us-west-2"
+	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+		if awsEndpoint != "" {
+			return aws.Endpoint{
+				PartitionID:   "aws",
+				URL:           awsEndpoint,
+				SigningRegion: awsRegion,
+			}, nil
+		}
+
+		// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
+		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+	})
+
+	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(awsRegion),
+		config.WithEndpointResolver(customResolver),
+	)
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+	return dynamodb.NewFromConfig(awsCfg)
+}
+
 func NewDynamoDBStore(ctx context.Context, tableName string) *DynamoDBStore {
+	if os.Getenv("ENVIRONMENT") == "local" {
+		client := CreateLocalClient()
+		return &DynamoDBStore{
+			client:    client,
+			tableName: tableName,
+		}
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		log.Fatalf("unable to load SDK config, %v", err)
+	}
+
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
@@ -95,7 +134,7 @@ func (d *DynamoDBStore) Get(ctx context.Context, id string) (*Product, error) {
 	return &product, nil
 }
 
-func (d *DynamoDBStore) Put(ctx context.Context, product Product) error {
+func (d *DynamoDBStore) Put(ctx context.Context, product ProductModel) error {
 	item, err := attributevalue.MarshalMap(&product)
 	if err != nil {
 		return fmt.Errorf("unable to marshal product: %w", err)

@@ -9,8 +9,7 @@
         "watch": "nodemon --watch ./ -e go,js --exec make build",
         "local-invoke": "sam local invoke ListToDoFunctions -e event.json",
         "debug": "npm-run-all --parallel start watch",
-        "offline": "serverless offline --useDocker",
-        "start-with-docker": "node ./node_modules/.bin/serverless offline start --useDocker"
+        "offline": "serverless offline --useDocker"
     },
     "devDependencies": {
         "aws-sam-local": "^0.2.11",

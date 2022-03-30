@@ -9,6 +9,6 @@ import (
 type Store interface {
 	All(context.Context, *string) (ProductRange, error)
 	Get(context.Context, string) (*Product, error)
-	Put(context.Context, Product) error
+	Put(context.Context, ProductModel) error
 	Delete(context.Context, string) error
 }

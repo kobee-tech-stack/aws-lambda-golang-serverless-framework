@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/google/uuid"
 	"net/http"
 	"strings"
 )
@@ -49,9 +50,11 @@ func (l *APIGatewayV2Handler) GetHandler(ctx context.Context, event events.APIGa
 }
 
 func (l *APIGatewayV2Handler) PutHandler(ctx context.Context, event events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	var id string
 	id, ok := event.PathParameters["id"]
 	if !ok {
-		return errResponse(http.StatusBadRequest, "missing 'id' parameter in path"), nil
+		//return errResponse(http.StatusBadRequest, "missing 'id' parameter in path"), nil
+		id = uuid.NewString()
 	}
 
 	if strings.TrimSpace(event.Body) == "" {

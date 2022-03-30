@@ -46,16 +46,19 @@ func (d *Products) AllProducts(ctx context.Context, next *string) (ProductRange,
 }
 
 func (d *Products) PutProduct(ctx context.Context, id string, body []byte) (*Product, error) {
-	product := Product{}
+	product := Product{Id: id}
 	if err := json.Unmarshal(body, &product); err != nil {
 		return nil, fmt.Errorf("%w", ErrJsonUnmarshal)
 	}
 
-	if product.Id != id {
-		return nil, fmt.Errorf("%w", ErrProductIdMismatch)
+	productModel := ProductModel{
+		Pk:    "product",
+		Sk:    "product_id::" + product.Id,
+		Id:    product.Id,
+		Name:  product.Name,
+		Price: product.Price,
 	}
-
-	err := d.store.Put(ctx, product)
+	err := d.store.Put(ctx, productModel)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
