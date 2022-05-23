@@ -22,27 +22,25 @@ var _ Store = (*DynamoDBStore)(nil)
 func CreateLocalClient() *dynamodb.Client {
 	awsEndpoint := "http://localhost:4566"
 	awsRegion := "us-west-2"
-	customResolver := aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
-		if awsEndpoint != "" {
-			return aws.Endpoint{
-				PartitionID:   "aws",
-				URL:           awsEndpoint,
-				SigningRegion: awsRegion,
-			}, nil
-		}
 
-		// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
-		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-	})
-
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(awsRegion),
-		config.WithEndpointResolver(customResolver),
+		config.WithClientLogMode(aws.LogRequest|aws.LogRetries),
 	)
+	if err != nil {
+		panic(err)
+	}
+
+	cfg.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL:           awsEndpoint,
+			SigningRegion: awsRegion,
+		}, nil
+	})
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
-	return dynamodb.NewFromConfig(awsCfg)
+	return dynamodb.NewFromConfig(cfg)
 }
 
 func NewDynamoDBStore(ctx context.Context, tableName string) *DynamoDBStore {
